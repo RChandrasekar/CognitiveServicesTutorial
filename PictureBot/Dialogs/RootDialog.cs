@@ -5,6 +5,8 @@ using Microsoft.Bot.Builder.Luis;
 using Microsoft.Bot.Builder.Scorables;
 using Microsoft.Bot.Builder.Luis.Models;
 using Microsoft.Bot.Connector;
+using Microsoft.Bot.Builder.Dialogs.Internals;
+using Autofac;
 
 namespace PictureBot.Dialogs
 {
@@ -25,11 +27,12 @@ namespace PictureBot.Dialogs
         //    context.Wait(MessageReceivedAsync);
         //}
 
+        [RegexPattern("^hello")]
         [RegexPattern("^hi")]
         [ScorableGroup(0)]
         public async Task Hello(IDialogContext context, IActivity activity)
         {
-            await context.PostAsync("Hello!  I am a Photo Organization Bot.  You can ask me things like 'find pictures of women outside'.  I can also share your photos on Twitter.");
+            await context.PostAsync("Hello from Regex!  I am a Photo Organization Bot.  You can ask me things like 'find pictures of women outside'.  I can also share your photos on Twitter.");
         }
 
         [RegexPattern("^help")]
@@ -67,9 +70,32 @@ namespace PictureBot.Dialogs
 
             // TODO: call Azure Search
             // Jen start here
-
             await context.PostAsync($"Searching pictures...");
+
+            try
+            {
+                var activity = context.Activity.AsMessageActivity();
+                context.Call(new SearchIntroDialog(), this.ResumeAfterSearchDialog);
+
+            }
+            catch (Exception e)
+            {
+                
+                throw;
+            }            //await Conversation.SendAsync(activity, () => new SearchIntroDialog());
+
+            //using (var scope = DialogModule.BeginLifetimeScope(Conversation.Container, activity))
+            //{
+            //    await Conversation.SendAsync(activity, () => scope.Resolve<IDialog<object>>());
+            //}
         }
+
+        private async Task ResumeAfterSearchDialog(IDialogContext context, IAwaitable<object> result)
+        {
+            await context.PostAsync($"Done searching pictures.");
+        }
+
+        // TODO: add an OrderPic intent that uses FormFlow
 
         [LuisIntent("SharePic")]
         [ScorableGroup(1)]
@@ -99,7 +125,7 @@ namespace PictureBot.Dialogs
         public async Task Greeting(IDialogContext context, LuisResult result)
         {
             // TODO: remove this - duplicate logic?  
-            await context.PostAsync("Hello!  I am a Photo Organization Bot.  You can ask me things like 'find pictures of women outside'.  I can also share your photos on Twitter.");
+            await context.PostAsync("Hello from LUIS!  I am a Photo Organization Bot.  You can ask me things like 'find pictures of women outside'.  I can also share your photos on Twitter.");
         }
 
         // Since none of the scorables in previous group won, the dialog sends a help message.
